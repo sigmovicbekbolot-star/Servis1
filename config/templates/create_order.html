@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Создать заказ</h2>
+<form method="POST">
+    {% csrf_token %}
+    <div class="mb-3">
+        <label>Услуга</label>
+        <select name="service" class="form-select" required>
+            {% for s in services %}
+            <option value="{{ s.id }}">{{ s.name }} - {{ s.price }}$</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="mb-3">
+        <label>Имарат</label>
+        <select name="building" class="form-select">
+            <option value="">Не выбран</option>
+            {% for b in buildings %}
+            <option value="{{ b.id }}">{{ b.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="mb-3">
+        <label>Дата</label>
+        <input type="date" name="date" class="form-control" required>
+    </div>
+    <div class="mb-3">
+        <label>Время</label>
+        <input type="time" name="time" class="form-control" required>
+    </div>
+    <div class="mb-3">
+        <label>Комментарий</label>
+        <textarea name="comment" class="form-control"></textarea>
+    </div>
+    <button type="submit" class="btn btn-primary">Создать</button>
+</form>
+{% endblock %}

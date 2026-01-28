@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Имараты</h2>
+<table class="table table-bordered table-striped">
+<thead class="table-dark">
+<tr>
+    <th>ID</th>
+    <th>Название</th>
+    <th>Адрес</th>
+    <th>Описание</th>
+</tr>
+</thead>
+<tbody>
+{% for building in buildings %}
+<tr>
+    <td>{{ building.id }}</td>
+    <td>{{ building.name }}</td>
+    <td>{{ building.address }}</td>
+    <td>{{ building.description }}</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+{% endblock %}
