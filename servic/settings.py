@@ -1,13 +1,14 @@
 import os
 from pathlib import Path
+from django.utils.translation import gettext_lazy as _
 
 # 1. НЕГИЗГИ ЖОЛДОР
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# 2. КООПСУЗДУК ЖӨНДӨӨЛӨРҮ
+# 2. КООПСУЗДУК
 SECRET_KEY = 'django-insecure-6!n5z08-ouw9u47_%k_01&^d^7=4_y4gxo(vcnqx8cl1v*c7ul'
 DEBUG = True
-ALLOWED_HOSTS = ['*']  # Иштеп жаткан учурда баарын ийкемдүү кылат
+ALLOWED_HOSTS = ['*']
 
 # 3. ТИРКЕМЕЛЕР (APPS)
 INSTALLED_APPS = [
@@ -18,17 +19,18 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
-    # Сенин колдонмолоруң
+    # Сенин колдонмолоруң жана кошумчалар
     'config',
     'rest_framework',
-    'rest_framework.authtoken',  # Токен менен иштөө үчүн
-    'drf_spectacular',  # Swagger документтери үчүн
+    'rest_framework.authtoken',
+    'drf_spectacular',
 ]
 
 # 4. ОРТОНКУ КАТМАРЛАР (MIDDLEWARE)
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware', # Сөзсүз 1-орундарда
+    'django.middleware.locale.LocaleMiddleware',           # ТИЛ ҮЧҮН УШУЛ ЖЕРДЕ БОЛУШУ ШАРТ!
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -42,7 +44,7 @@ ROOT_URLCONF = 'servic.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'],  # Эгер өзүнчө папкаң болсо
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -50,6 +52,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'django.template.context_processors.i18n', # Тилдер үчүн кошумча
             ],
         },
     },
@@ -76,13 +79,25 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator', },
 ]
 
-# 9. ТИЛ ЖАНА УБАКЫТ
-LANGUAGE_CODE = 'ky'  # Кыргыз тилине койсоң болот же 'en-us'
+# 9. ТИЛ ЖАНА УБАКЫТ (I18N)
+LANGUAGE_CODE = 'ky'
 TIME_ZONE = 'Asia/Bishkek'
 USE_I18N = True
+USE_L10N = True
 USE_TZ = True
 
-# 10. СТАТИКА ЖАНА МЕДИА (ФОТО/ВИДЕО)
+LANGUAGES = [
+    ('ky', _('Kyrgyz')),
+    ('ru', _('Russian')),
+    ('en', _('English')),
+]
+
+# Тил файлдары сактала турган жер (Эгер котормо жасайм десең)
+LOCALE_PATHS = [
+    BASE_DIR / 'locale/',
+]
+
+# 10. СТАТИКА ЖАНА МЕДИА
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
@@ -97,28 +112,22 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.TokenAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticated',
+        'rest_framework.permissions.IsAuthenticatedOrReadOnly',
     ],
-    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',  # Swagger схемасы
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
 
-# 12. SWAGGER (DRF SPECTACULAR) ЖӨНДӨӨЛӨРҮ
+# 12. SWAGGER (SPECTACULAR)
 SPECTACULAR_SETTINGS = {
     'TITLE': 'Service.kg API',
-    'DESCRIPTION': 'Сервис порталынын API документтери (Swagger)',
+    'DESCRIPTION': 'Сервис порталынын API документтери',
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
-    'SWAGGER_UI_SETTINGS': {
-        'deepLinking': True,
-        'persistAuthorization': True,  # Токенди эстеп калат
-        'displayOperationId': True,
-    },
 }
 
-# 13. АВТОРИЗАЦИЯНЫ БАГЫТТОО
+# 13. БАГЫТТОО (LOGIN/LOGOUT)
 LOGIN_URL = 'login'
-LOGIN_REDIRECT_URL = 'dashboard'
+LOGIN_REDIRECT_URL = 'home'
 LOGOUT_REDIRECT_URL = 'login'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-

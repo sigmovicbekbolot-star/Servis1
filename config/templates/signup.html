@@ -1,23 +1,40 @@
 {% extends 'base.html' %}
-
 {% block content %}
-<div class="container mt-5">
-    <div class="row justify-content-center">
-        <div class="col-md-5">
-            <div class="card shadow border-0 rounded-4">
-                <div class="card-body p-5">
-                    <h2 class="text-center fw-bold mb-4">Жаңы каттоо</h2>
-                    <form method="post">
-                        {% csrf_token %}
-                        {{ form.as_p }}
-                        <button type="submit" class="btn btn-success w-100 rounded-pill py-2 mt-3">Катталуу</button>
-                    </form>
-                    <div class="text-center mt-3">
-                        <p>Аккаунтуңуз барбы? <a href="{% url 'login' %}">Кирүү</a></p>
-                    </div>
-                </div>
-            </div>
+<div class="min-h-[80vh] flex items-center justify-center px-4 py-10">
+    <div class="bg-white dark:bg-slate-900 p-10 rounded-[3rem] shadow-2xl border border-slate-100 dark:border-slate-800 w-full max-w-md">
+        <div class="text-center mb-10">
+            <h2 class="text-3xl font-black tracking-tighter uppercase italic">Катталуу</h2>
+            <p class="text-slate-500 text-sm font-bold">Жаңы аккаунт ачып, кызматтарды колдонуңуз</p>
         </div>
+
+        <form method="post" class="space-y-5">
+            {% csrf_token %}
+            {% for field in form %}
+            <div>
+                <label class="block text-[10px] font-black uppercase text-slate-400 mb-1 ml-4 tracking-widest">{{ field.label }}</label>
+                {{ field }}
+                {% if field.errors %}
+                    <p class="text-red-500 text-[10px] mt-1 ml-4 italic">{{ field.errors.0 }}</p>
+                {% endif %}
+            </div>
+            {% endfor %}
+            <button type="submit" class="w-full bg-slate-900 dark:bg-blue-600 text-white py-5 rounded-2xl font-black uppercase tracking-widest hover:bg-orange-500 transition-all shadow-xl">
+                Катталуу
+            </button>
+        </form>
     </div>
 </div>
+
+<style>
+    /* Django формаларынын стилин Tailwind'ге ылайыктоо */
+    input {
+        width: 100%;
+        padding: 1rem 1.5rem !important;
+        border-radius: 1rem !important;
+        background: #f8fafc !important;
+        border: none !important;
+        font-weight: 700 !important;
+    }
+    .dark input { background: #1e293b !important; color: white !important; }
+</style>
 {% endblock %}

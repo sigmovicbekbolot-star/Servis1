@@ -1,10 +1,75 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
-</head>
-<body>
-$END$
-</body>
-</html>
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="min-h-screen bg-slate-50 dark:bg-slate-950 py-12 px-4 flex items-center justify-center">
+    <div class="max-w-md w-full">
+
+        <div class="bg-white dark:bg-slate-900 rounded-[3rem] shadow-2xl border border-slate-100 dark:border-slate-800 overflow-hidden relative">
+
+            <div class="absolute top-0 right-0 p-8 opacity-10">
+                <i class="fa-solid fa-credit-card text-8xl"></i>
+            </div>
+
+            <div class="p-8 md:p-10 relative z-10 text-center">
+                <div class="inline-flex items-center gap-2 bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest mb-6">
+                    <span class="relative flex h-2 w-2">
+                      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+                      <span class="relative inline-flex rounded-full h-2 w-2 bg-orange-500"></span>
+                    </span>
+                    Төлөм күтүлүүдө
+                </div>
+
+                <h2 class="text-2xl font-black text-slate-800 dark:text-white uppercase italic tracking-tighter mb-2">Кызматты активдештирүү</h2>
+                <p class="text-slate-500 dark:text-slate-400 text-sm font-medium mb-8">Заказды кабыл алуу үчүн 10% алдын ала төлөм (взнос) кылыңыз</p>
+
+                <div class="bg-slate-50 dark:bg-slate-800/50 rounded-3xl p-6 mb-8 border border-slate-100 dark:border-slate-700">
+                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Төлөнүүчү сумма:</p>
+                    <div class="text-4xl font-black text-blue-600 dark:text-blue-400">
+                        {{ prepayment }} <span class="text-lg">сом</span>
+                    </div>
+                </div>
+
+                <div class="space-y-4 mb-8 text-left">
+                    <div class="flex items-center justify-between p-4 bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-red-500 rounded-xl flex items-center justify-center text-white font-bold italic">M</div>
+                            <div>
+                                <p class="text-[9px] font-black text-slate-400 uppercase">MBANK / Номер:</p>
+                                <p class="font-black text-slate-800 dark:text-white">+996 700 123 456</p>
+                            </div>
+                        </div>
+                        <button onclick="navigator.clipboard.writeText('+996700123456')" class="text-blue-500 hover:text-blue-600 p-2">
+                            <i class="fa-solid fa-copy"></i>
+                        </button>
+                    </div>
+
+                    <div class="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-2xl border border-blue-100 dark:border-blue-900/30">
+                        <p class="text-[10px] text-blue-600 dark:text-blue-400 font-bold leading-relaxed">
+                            <i class="fa-solid fa-circle-info mr-1"></i>
+                            Төлөмдүн комментарийине заказдын номерин жазыңыз: <span class="font-black">#{{ order.id }}</span>
+                        </p>
+                    </div>
+                </div>
+
+                <form method="POST">
+                    {% csrf_token %}
+                    <button type="submit" class="w-full bg-slate-900 dark:bg-blue-600 text-white font-black py-5 rounded-[1.5rem] shadow-xl shadow-slate-200 dark:shadow-none hover:bg-blue-600 dark:hover:bg-blue-700 hover:-translate-y-1 transition-all active:scale-95 flex items-center justify-center gap-3 uppercase tracking-widest text-sm">
+                        <i class="fa-solid fa-circle-check"></i>
+                        Мен төлөдүм
+                    </button>
+                </form>
+
+                <a href="{% url 'dashboard' %}" class="inline-block mt-6 text-slate-400 hover:text-slate-600 text-[10px] font-black uppercase tracking-widest transition-all">
+                    Кийинчерээк төлөө
+                </a>
+            </div>
+        </div>
+
+        <div class="mt-8 flex justify-center gap-6 opacity-30 grayscale">
+            <i class="fa-brands fa-cc-visa text-3xl text-slate-400"></i>
+            <i class="fa-brands fa-cc-mastercard text-3xl text-slate-400"></i>
+            <i class="fa-solid fa-money-bill-transfer text-3xl text-slate-400"></i>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,72 +1,93 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="min-h-screen bg-slate-50 py-12 px-4">
-    <div class="max-w-2xl mx-auto bg-white rounded-[2.5rem] shadow-2xl shadow-blue-100 overflow-hidden border border-slate-100">
+<div class="max-w-3xl mx-auto py-12 px-4">
+    <div class="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-[2.5rem] shadow-2xl shadow-slate-200/50 dark:shadow-none border border-white dark:border-slate-800 overflow-hidden transition-all">
+        <div class="p-8 md:p-12">
 
-        <div class="bg-blue-600 p-8 text-center">
-            <div class="inline-flex items-center justify-center w-16 h-16 bg-white/20 rounded-2xl mb-4 backdrop-blur-sm">
-                <i class="fa-solid fa-cart-plus text-3xl text-white"></i>
+            <div class="flex items-center gap-4 mb-8">
+                <div class="bg-blue-600 p-3 rounded-2xl shadow-lg shadow-blue-200">
+                    <i class="fa-solid fa-file-pen text-white text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-3xl font-black text-slate-800 dark:text-white tracking-tight italic uppercase">Заказ түзүү</h1>
+                    <p class="text-slate-500 font-bold text-sm uppercase tracking-wider">Маалыматтарды толтуруңуз</p>
+                </div>
             </div>
-            <h2 class="text-3xl font-black text-white">Жаңы заказ түзүү</h2>
-            <p class="text-blue-100 mt-2">Керектүү маалыматтарды толтуруңуз</p>
-        </div>
 
-        <form method="POST" class="p-8 md:p-12 space-y-6">
-            {% csrf_token %}
+            <form method="post" class="space-y-6">
+                {% csrf_token %}
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div class="space-y-2">
-                    <label class="block text-sm font-bold text-slate-700 ml-1">Кызмат</label>
+                    <label class="text-xs font-black text-slate-400 dark:text-slate-500 uppercase ml-2 tracking-widest">Кызмат</label>
                     <div class="relative">
-                        <select name="service" required class="w-full pl-4 pr-10 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-blue-500 focus:bg-white outline-none appearance-none transition-all font-semibold text-slate-700">
+                        <select name="service" class="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-2xl px-5 py-4 font-bold text-slate-700 dark:text-slate-200 outline-none focus:border-blue-500 focus:bg-white dark:focus:bg-slate-700 transition-all appearance-none cursor-pointer">
                             {% for service in services %}
-                                <option value="{{ service.id }}" {% if service.id|slugify == selected_service_id %}selected{% endif %}>
-                                    {{ service.name }} ({{ service.price }} сом)
+                                <option value="{{ service.id }}" {% if selected_service_id == service.id|stringformat:"i" %}selected{% endif %}>
+                                    {{ service.name }} — {{ service.price }} сом
                                 </option>
                             {% endfor %}
                         </select>
-                        <i class="fa-solid fa-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
+                        <i class="fa-solid fa-chevron-down absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
                     </div>
                 </div>
 
                 <div class="space-y-2">
-                    <label class="block text-sm font-bold text-slate-700 ml-1">Имарат</label>
+                    <label class="text-xs font-black text-slate-400 dark:text-slate-500 uppercase ml-2 tracking-widest">Имарат / Дарек</label>
                     <div class="relative">
-                        <select name="building" required class="w-full pl-4 pr-10 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-blue-500 focus:bg-white outline-none appearance-none transition-all font-semibold text-slate-700">
-                            {% for building in buildings %}
-                                <option value="{{ building.id }}">{{ building.name }}</option>
+                        <select name="building" class="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-2xl px-5 py-4 font-bold text-slate-700 dark:text-slate-200 outline-none focus:border-blue-500 focus:bg-white dark:focus:bg-slate-700 transition-all appearance-none cursor-pointer" required>
+                            <option value="" disabled selected>Даректи тандаңыз...</option>
+                            {% for b in buildings %}
+                                <option value="{{ b.id }}">{{ b.name }} ({{ b.address }})</option>
                             {% endfor %}
                         </select>
-                        <i class="fa-solid fa-building absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
+                        <i class="fa-solid fa-chevron-down absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
                     </div>
                 </div>
-            </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div class="space-y-2">
-                    <label class="block text-sm font-bold text-slate-700 ml-1">Дата</label>
-                    <input type="date" name="date" class="w-full px-4 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-blue-500 focus:bg-white outline-none transition-all font-semibold text-slate-700">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 py-2">
+                    <div class="flex items-center gap-4 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-700">
+                        <div class="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600">
+                            <i class="fa-solid fa-truck-fast"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-[10px] font-black uppercase dark:text-white">Ыкчам келүү</h4>
+                            <p class="text-[9px] text-slate-400 font-bold uppercase">30 мүнөттүн ичинде</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-4 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-700">
+                        <div class="w-10 h-10 rounded-xl bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-orange-600">
+                            <i class="fa-solid fa-shield-check"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-[10px] font-black uppercase dark:text-white">Сапат кепилдиги</h4>
+                            <p class="text-[9px] text-slate-400 font-bold uppercase">100% ишенимдүү</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-2">
+                        <label class="text-xs font-black text-slate-400 uppercase ml-2">Күнү</label>
+                        <input type="date" name="date" class="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-2xl px-5 py-4 font-bold text-slate-700 dark:text-white outline-none focus:border-blue-500 transition-all cursor-pointer" required>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-xs font-black text-slate-400 uppercase ml-2">Убактысы</label>
+                        <input type="time" name="time" class="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-2xl px-5 py-4 font-bold text-slate-700 dark:text-white outline-none focus:border-blue-500 transition-all cursor-pointer" required>
+                    </div>
                 </div>
 
                 <div class="space-y-2">
-                    <label class="block text-sm font-bold text-slate-700 ml-1">Убакыт</label>
-                    <input type="time" name="time" class="w-full px-4 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-blue-500 focus:bg-white outline-none transition-all font-semibold text-slate-700">
+                    <label class="text-xs font-black text-slate-400 uppercase ml-2">Кошумча маалымат</label>
+                    <textarea name="comment" rows="3" placeholder="Мисалы: Домофон иштебейт, 3-кабат..." class="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-2xl px-5 py-4 font-bold text-slate-700 dark:text-white outline-none focus:border-blue-500 transition-all"></textarea>
                 </div>
-            </div>
 
-            <div class="space-y-2">
-                <label class="block text-sm font-bold text-slate-700 ml-1">Коментарий</label>
-                <textarea name="comment" rows="3" placeholder="Кошумча маалымат жазыңыз..." class="w-full px-4 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-blue-500 focus:bg-white outline-none transition-all font-semibold text-slate-700"></textarea>
-            </div>
-
-            <div class="pt-4">
-                <button type="submit" class="w-full py-5 bg-blue-600 text-white rounded-2xl font-black text-lg shadow-xl shadow-blue-200 hover:bg-blue-700 hover:-translate-y-1 active:scale-95 transition-all flex items-center justify-center gap-3">
-                    <i class="fa-solid fa-paper-plane"></i>
+                <button type="submit" class="w-full bg-slate-900 dark:bg-blue-600 hover:bg-blue-600 dark:hover:bg-blue-700 text-white font-black py-5 rounded-2xl shadow-xl shadow-slate-200 dark:shadow-none transition-all active:scale-95 flex items-center justify-center gap-3 mt-4 uppercase tracking-[0.2em] italic">
+                    <i class="fa-solid fa-check-circle"></i>
                     Заказды ырастоо
                 </button>
-            </div>
-        </form>
+            </form>
+        </div>
     </div>
 </div>
 {% endblock %}

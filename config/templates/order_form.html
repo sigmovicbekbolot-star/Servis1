@@ -1,58 +1,84 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="min-h-screen bg-slate-50 py-12 px-4">
-    <div class="max-w-2xl mx-auto bg-white rounded-[2.5rem] shadow-2xl border border-slate-100 overflow-hidden">
-        <div class="bg-orange-500 p-8 text-center text-white">
-            <h2 class="text-3xl font-black">Заказды оңдоо</h2>
-            <p class="opacity-80 mt-2">Маалыматтарды же статусду өзгөртүңүз</p>
-        </div>
-
-        <form method="POST" class="p-8 space-y-6">
-            {% csrf_token %}
-
-            <div class="space-y-4">
-                {% for field in form %}
-                <div class="flex flex-col gap-2">
-                    <label class="text-sm font-black text-slate-700 ml-1 uppercase tracking-wider">{{ field.label }}</label>
-                    <div class="w-full">
-                        {{ field }}
-                    </div>
-                    {% if field.errors %}
-                        <p class="text-red-500 text-xs font-bold">{{ field.errors.0 }}</p>
-                    {% endif %}
+<div class="max-w-3xl mx-auto py-12 px-4">
+    <div class="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-[2.5rem] shadow-2xl shadow-slate-200/50 dark:shadow-none border border-white dark:border-slate-800 overflow-hidden transition-all">
+        <div class="p-8 md:p-12">
+            <div class="flex items-center gap-4 mb-8">
+                <div class="bg-blue-600 p-3 rounded-2xl shadow-lg shadow-blue-200">
+                    <i class="fa-solid fa-file-pen text-white text-xl"></i>
                 </div>
-                {% endfor %}
+                <div>
+                    <h1 class="text-3xl font-black text-slate-800 dark:text-white tracking-tight italic uppercase">Заказ түзүү</h1>
+                    <p class="text-slate-500 font-bold text-sm uppercase tracking-wider">Маалыматтарды толтуруңуз</p>
+                </div>
             </div>
 
-            <style>
-                /* Django формасын кооздоо */
-                select, input, textarea {
-                    width: 100% !important;
-                    padding: 1rem !important;
-                    background-color: #f8fafc !important;
-                    border: 2px solid #f1f5f9 !important;
-                    border-radius: 1.25rem !important;
-                    outline: none !important;
-                    font-weight: 600 !important;
-                    transition: all 0.2s !important;
-                }
-                select:focus, input:focus, textarea:focus {
-                    border-color: #f97316 !important;
-                    background-color: white !important;
-                    box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.1) !important;
-                }
-            </style>
+            <form method="post" class="space-y-6">
+                {% csrf_token %}
 
-            <div class="pt-6 flex gap-4">
-                <button type="submit" class="flex-1 py-5 bg-orange-500 text-white rounded-2xl font-black text-lg shadow-xl shadow-orange-100 hover:bg-orange-600 hover:-translate-y-1 transition-all">
-                    Өзгөртүүнү сактоо
+                <div class="space-y-2">
+                    <label class="text-xs font-black text-slate-400 uppercase ml-2 tracking-widest">Кызмат</label>
+                    <div class="relative">
+                        <select name="service" class="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-2xl px-5 py-4 font-bold text-slate-700 dark:text-slate-200 outline-none focus:border-blue-500 focus:bg-white transition-all appearance-none cursor-pointer">
+                            {% for service in services %}
+                                <option value="{{ service.id }}" {% if selected_service_id == service.id|stringformat:"i" %}selected{% endif %}>
+                                    {{ service.name }} — {{ service.price }} сом
+                                </option>
+                            {% endfor %}
+                        </select>
+                        <i class="fa-solid fa-chevron-down absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <label class="text-xs font-black text-slate-400 uppercase ml-2 tracking-widest">Имарат / Дарек</label>
+                    <div class="relative">
+                        <select name="building" class="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-2xl px-5 py-4 font-bold text-slate-700 dark:text-slate-200 outline-none focus:border-blue-500 focus:bg-white transition-all appearance-none cursor-pointer" required>
+                            <option value="" disabled selected>Даректи тандаңыз...</option>
+                            {% for b in buildings %}
+                                <option value="{{ b.id }}">{{ b.name }} ({{ b.address }})</option>
+                            {% endfor %}
+                        </select>
+                        <i class="fa-solid fa-chevron-down absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4 mt-6">
+                    <div class="bg-blue-50 dark:bg-slate-800 p-4 rounded-2xl border border-blue-100 dark:border-slate-700">
+                        <i class="fa-solid fa-shield-check text-blue-500 mb-2"></i>
+                        <h4 class="text-[10px] font-black uppercase text-slate-800 dark:text-white">Коопсуздук</h4>
+                        <p class="text-[9px] text-slate-500 font-bold uppercase">Мастерлер текшерүүдөн өткөн</p>
+                    </div>
+                    <div class="bg-orange-50 dark:bg-slate-800 p-4 rounded-2xl border border-orange-100 dark:border-slate-700">
+                        <i class="fa-solid fa-bolt text-orange-500 mb-2"></i>
+                        <h4 class="text-[10px] font-black uppercase text-slate-800 dark:text-white">Тез тейлөө</h4>
+                        <p class="text-[9px] text-slate-500 font-bold uppercase">30 мүнөттө жетип келебиз</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
+                    <div class="space-y-2">
+                        <label class="text-xs font-black text-slate-400 uppercase ml-2">Күнү</label>
+                        <input type="date" name="date" class="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-2xl px-5 py-4 font-bold text-slate-700 dark:text-white outline-none focus:border-blue-500 transition-all cursor-pointer" required>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-xs font-black text-slate-400 uppercase ml-2">Убактысы</label>
+                        <input type="time" name="time" class="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-2xl px-5 py-4 font-bold text-slate-700 dark:text-white outline-none focus:border-blue-500 transition-all cursor-pointer" required>
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <label class="text-xs font-black text-slate-400 uppercase ml-2">Кошумча маалымат</label>
+                    <textarea name="comment" rows="3" placeholder="Мисалы: Домофон иштебейт, 3-кабат..." class="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-2xl px-5 py-4 font-bold text-slate-700 dark:text-white outline-none focus:border-blue-500 transition-all"></textarea>
+                </div>
+
+                <button type="submit" class="w-full bg-slate-900 dark:bg-blue-600 hover:bg-blue-600 dark:hover:bg-blue-700 text-white font-black py-5 rounded-2xl shadow-xl shadow-slate-200 dark:shadow-none transition-all active:scale-95 flex items-center justify-center gap-3 mt-4 uppercase tracking-[0.2em] italic">
+                    <i class="fa-solid fa-check-circle"></i>
+                    Заказды ырастоо
                 </button>
-                <a href="{% url 'dashboard' %}" class="px-8 py-5 bg-slate-100 text-slate-500 rounded-2xl font-black hover:bg-slate-200 transition-all">
-                    Жокко чыгаруу
-                </a>
-            </div>
-        </form>
+            </form>
+        </div>
     </div>
 </div>
 {% endblock %}

@@ -1,59 +1,63 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="container mx-auto px-4 py-8">
-    <h1 class="text-4xl font-black text-center mb-8 text-slate-800">Кандай кызмат керек?</h1>
-
-    <div class="max-w-xl mx-auto mb-12">
-        <form method="GET" action="{% url 'home' %}" class="flex gap-2 p-2 bg-white rounded-2xl shadow-sm border border-slate-100">
-            <input type="text" name="search" placeholder="Кызматты издеңиз (мис: электрик)..."
-                   class="flex-1 p-3 rounded-xl outline-none text-slate-600" value="{{ request.GET.search }}">
-            <button type="submit" class="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-blue-700 transition-colors">
-                Издөө
-            </button>
+<div class="max-w-7xl mx-auto py-12 px-4">
+    
+    <div class="text-center mb-16">
+        <h1 class="text-5xl md:text-6xl font-black mb-6 tracking-tight">Сапаттуу кызмат — <span class="text-orange-500 italic">Service.kg</span></h1>
+        <p class="text-slate-500 dark:text-slate-400 font-bold max-w-2xl mx-auto mb-10">Биздин профессионалдар сиздин маселеңизди тез жана ишенимдүү чечип беришет.</p>
+        
+        <form action="{% url 'home' %}" method="GET" class="max-w-2xl mx-auto relative group">
+            <input type="text" name="q" placeholder="Кандай кызмат издеп жатасыз?" class="w-full py-5 pl-14 pr-32 rounded-[2rem] bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 outline-none focus:border-blue-500 transition-all font-bold">
+            <i class="fa-solid fa-magnifying-glass absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500"></i>
+            <button class="absolute right-3 top-1/2 -translate-y-1/2 bg-blue-600 text-white px-8 py-3 rounded-[1.5rem] font-black uppercase text-xs">Издөө</button>
         </form>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-20">
+        {% for count, label, color in statistics %}
+        <div class="bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm p-8 rounded-[2.5rem] border border-white dark:border-slate-800 text-center shadow-sm">
+            <span class="block text-4xl font-black mb-2 {{ color }}">{{ count }}</span>
+            <span class="text-[10px] font-black uppercase text-slate-400 tracking-widest">{{ label }}</span>
+        </div>
+        {% endfor %}
+        </div>
+
+    <h2 class="text-3xl font-black mb-10 uppercase tracking-tighter">Популярдуу кызматтар</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {% for service in services %}
-        <div class="group bg-white rounded-3xl shadow-sm overflow-hidden border border-slate-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-            <a href="{% url 'service_detail' service.id %}" class="block h-52 bg-slate-100 relative overflow-hidden">
+        <div class="group bg-white dark:bg-slate-900 rounded-[3rem] border border-slate-200 dark:border-slate-800 overflow-hidden shadow-xl hover:-translate-y-3 transition-all duration-500">
+            
+            <div class="h-56 w-full overflow-hidden relative bg-slate-200 dark:bg-slate-800">
                 {% if service.image %}
                     <img src="{{ service.image.url }}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
                 {% else %}
-                    <div class="flex items-center justify-center h-full text-slate-300 text-6xl">🛠️</div>
-                {% endif %}
-
-                <div class="absolute top-4 left-4 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-2xl text-sm font-black shadow-sm flex items-center gap-1">
-                    <span class="text-orange-500">★</span>
-                    <span class="text-slate-800">{{ service.get_average_rating|stringformat:".1f" }}</span>
-                </div>
-            </a>
-
-            <div class="p-6">
-                <a href="{% url 'service_detail' service.id %}" class="block">
-                    <h3 class="text-xl font-bold mb-2 text-slate-800 hover:text-blue-600 transition-colors">{{ service.name }}</h3>
-                </a>
-                <p class="text-slate-500 text-sm mb-6 h-10 overflow-hidden leading-relaxed">
-                    {{ service.description|truncatechars:60 }}
-                </p>
-
-                <div class="flex justify-between items-center pt-4 border-t border-slate-50">
-                    <div>
-                        <span class="block text-[10px] text-slate-400 font-bold uppercase tracking-wider">Баасы</span>
-                        <span class="text-blue-600 font-black text-xl">{{ service.price }} <small class="text-xs font-normal">сом</small></span>
+                    <div class="w-full h-full flex items-center justify-center opacity-20">
+                        <i class="fa-solid fa-screwdriver-wrench text-6xl"></i>
                     </div>
-                    <a href="{% url 'service_detail' service.id %}" class="bg-slate-100 text-slate-800 px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-blue-600 hover:text-white transition-all">
-                        Тандоо
+                {% endif %}
+                <div class="absolute top-5 right-5 bg-white/90 dark:bg-slate-900/90 px-4 py-2 rounded-2xl font-black text-blue-600 shadow-lg">
+                    {{ service.price }} <span class="text-[10px]">СОМ</span>
+                </div>
+            </div>
+
+            <div class="p-8">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="bg-orange-500 p-2 rounded-xl text-white"><i class="fa-solid fa-bolt text-xs"></i></div>
+                    <h3 class="text-xl font-black tracking-tight">{{ service.name }}</h3>
+                </div>
+                <p class="text-slate-500 dark:text-slate-400 text-sm font-medium mb-8 line-clamp-2 h-10">{{ service.description }}</p>
+                
+                <div class="flex items-center justify-between pt-6 border-t border-slate-100 dark:border-slate-800">
+                    <div class="flex text-orange-400 text-[10px] gap-1">
+                        <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+                    </div>
+                    <a href="{% url 'service_detail' service.id %}" class="bg-slate-900 dark:bg-blue-600 text-white w-12 h-12 rounded-2xl flex items-center justify-center hover:bg-orange-500 transition-colors">
+                        <i class="fa-solid fa-arrow-right"></i>
                     </a>
                 </div>
             </div>
         </div>
-        {% empty %}
-            <div class="col-span-full text-center py-20">
-                <div class="text-6xl mb-4">🔍</div>
-                <p class="text-slate-400 font-bold text-xl">Кызматтар табылган жок.</p>
-            </div>
         {% endfor %}
     </div>
 </div>

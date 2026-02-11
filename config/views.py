@@ -1,4 +1,4 @@
-from django.db.models import Q, Avg  # Avg кошулду - орточо рейтинг үчүн
+from django.db.models import Q, Avg
 from django.contrib.auth.decorators import login_required
 from rest_framework import viewsets, permissions, generics
 from rest_framework.decorators import api_view, permission_classes
@@ -12,6 +12,7 @@ from django.contrib import messages
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import login
+from django.utils import timezone
 
 # Моделдер жана Сериализаторлор
 from .models import User, Building, Service, Order, OrderHistory, Client, Category, Review
@@ -20,19 +21,23 @@ from .serializers import (
     OrderSerializer, OrderHistorySerializer, RegisterSerializer
 )
 
+# =========================================================
+# 1. АВТОРИЗАЦИЯ ЖАНА РЕГИСТРАЦИЯ (HTML & API)
+# =========================================================
 
-# ===================
-# 1. API РЕГИСТРАЦИЯ
-# ===================
-class RegisterView(generics.CreateAPIView):
+# Бул жерде ListCreateAPIView колдонобуз, ошондо API аркылуу катталгандарды GET менен көрсө болот
+class RegisterView(generics.ListCreateAPIView):
     queryset = User.objects.all()
     permission_classes = (AllowAny,)
     serializer_class = RegisterSerializer
 
+    # Катталгандан кийин колдонуучунун ролун автоматтык түрдө 'USER' кылабыз
+    def perform_create(self, serializer):
+        user = serializer.save()
+        user.role = 'USER'
+        user.save()
 
-# ===================
-# РЕГИСТРАЦИЯ (HTML)
-# ===================
+
 class SignUpForm(UserCreationForm):
     class Meta:
         model = User
@@ -43,19 +48,25 @@ def signup(request):
     if request.method == 'POST':
         form = SignUpForm(request.POST)
         if form.is_valid():
-            user = form.save()
-            user.role = 'USER'
-            user.save()
-            messages.success(request, "Каттоо ийгиликтүү өттү! Эми кириңиз.")
-            return redirect('login')
+            user = form.save(commit=False) # Маалыматты убактылуу кармайбыз
+            user.role = 'USER'             # Ролун бекитебиз
+            user.save()                    # Эми базага "тарс" деп сактайбыз
+            login(request, user)
+            messages.success(request, "Каттоо ийгиликтүү өттү! Кош келиңиз.")
+            return redirect('home')
+        else:
+            # Эгер ката болсо, колдонуучуга эмне ката экенин көрсөтөбүз
+            for error in form.errors.values():
+                messages.error(request, error)
     else:
         form = SignUpForm()
     return render(request, 'signup.html', {'form': form})
 
 
-# ===================
-# ФОРМАЛАР
-# ===================
+# =========================================================
+# 2. ФОРМАЛАР
+# =========================================================
+
 class OrderForm(forms.ModelForm):
     class Meta:
         model = Order
@@ -68,13 +79,13 @@ class ReviewForm(forms.ModelForm):
         fields = ['rating', 'comment']
 
 
-# ===================
-# HTML VIEWS
-# ===================
+# =========================================================
+# 3. HTML VIEWS (БАШКЫ БЕТ ЖАНА КЫЗМАТТАР)
+# =========================================================
+
 @login_required
 def home(request):
     categories = Category.objects.all()
-    # .prefetch_related('reviews') кошуу базага болгон сурамды азайтат жана маалыматты тез алат
     services = Service.objects.all().prefetch_related('reviews')
 
     search_query = request.GET.get('search')
@@ -89,81 +100,92 @@ def home(request):
 
 
 @login_required
-def update_order_status(request, pk, status):
-    order = get_object_or_404(Order, pk=pk)
-    if request.user.role == 'MANAGER' and order.building == request.user.managed_building:
-        old_status = order.status
-        order.status = status
-        order.save()
-        OrderHistory.objects.create(order=order, old_status=old_status, new_status=status, changed_by=request.user)
-        messages.success(request, f"Заказ статусу {status} деп өзгөртүлдү!")
-    elif request.user.role == 'ADMIN':
-        order.status = status
-        order.save()
-        messages.success(request, "Админ катары статус өзгөртүлдү!")
-    else:
-        messages.error(request, "Сизге бул аракетке уруксат жок!")
-    return redirect('dashboard')
-
-
-# ---------------------------------------------------------
-# ЖАҢЫЛАНГАН SERVICE_DETAIL (Пикир калтыруу логикасы менен)
-# ---------------------------------------------------------
-@login_required
 def service_detail(request, pk):
-    # Кызматты базадан издөө
     service = get_object_or_404(Service, pk=pk)
-    # Ушул кызматка тиешелүү пикирлерди алуу
     reviews = service.reviews.all().order_by('-created_at')
 
     if request.method == "POST":
-        # Формадан маалыматты алуу
-        rating = request.POST.get('rating')
-        comment = request.POST.get('comment')
-
-        if rating and comment:
-            # Маалыматты базага сактоо
-            Review.objects.create(
-                service=service,
-                user=request.user,
-                rating=int(rating),
-                comment=comment
-            )
+        form = ReviewForm(request.POST)
+        if form.is_valid():
+            review = form.save(commit=False)
+            review.service = service
+            review.user = request.user
+            review.save()
             messages.success(request, "Пикириңиз ийгиликтүү кошулду!")
             return redirect('service_detail', pk=service.id)
+        else:
+            messages.error(request, "Ката кетти. Сураныч, баарын туура толтуруңуз.")
+    else:
+        form = ReviewForm()
 
-    # reviews маалыматын контекстке кошууну унутпа!
     return render(request, 'service_detail.html', {
         'service': service,
-        'reviews': reviews  # Мына ушул жер маанилүү!
+        'reviews': reviews,
+        'form': form  # Форманы шаблонго жиберебиз
+    })
+
+
+# =========================================================
+# 4. ЗАКАЗДАР ЖАНА ПРЕДОПЛАТА
+# =========================================================
+
+@login_required
+def create_order(request):
+    services = Service.objects.all()
+    buildings = Building.objects.all()
+    selected_service_id = request.GET.get('service')
+
+    if request.method == 'POST':
+        service_id = request.POST.get('service')
+        building_id = request.POST.get('building')
+        comment = request.POST.get('comment', '')
+
+        service = get_object_or_404(Service, id=service_id)
+
+        order = Order.objects.create(
+            user=request.user,
+            service=service,
+            building=get_object_or_404(Building, id=building_id),
+            date=request.POST.get('date') or timezone.now().date(),
+            time=request.POST.get('time') or timezone.now().time(),
+            comment=comment,
+            status='WAITING_PAYMENT'
+        )
+
+        messages.info(request, f"Заказ түзүлдү. Активдештирүү үчүн {order.prepayment_amount} сом взнос төлөңүз.")
+        return redirect('payment_page', pk=order.id)
+
+    return render(request, 'create_order.html', {
+        'services': services, 'buildings': buildings,
+        'selected_service_id': selected_service_id
     })
 
 
 @login_required
-def client_detail(request, pk):
-    client = get_object_or_404(Client, pk=pk)
-    return render(request, 'client_detail.html', {'client': client})
+def payment_page(request, pk):
+    order = get_object_or_404(Order, pk=pk)
+    old_display = order.get_status_display()
+
+    if request.method == 'POST':
+        order.status = 'PAID'
+        order.save()
+
+        # Тарыхка кыргызча жазуу (Төлөндү)
+        OrderHistory.objects.create(
+            order=order,
+            old_status=old_display,
+            new_status='Төлөндү',
+            changed_by=request.user
+        )
+        messages.success(request, "Взнос кабыл алынды! Заказ аткарылууга берилди.")
+        return redirect('dashboard')
+
+    return render(request, 'payment.html', {'order': order, 'prepayment': order.prepayment_amount})
 
 
-@login_required
-def client_edit(request, pk):
-    client = get_object_or_404(Client, pk=pk)
-    return render(request, 'client_form.html', {'client': client})
-
-
-@login_required
-def client_create(request):
-    if request.method == "POST":
-        first_name = request.POST.get('first_name')
-        last_name = request.POST.get('last_name')
-        phone = request.POST.get('phone')
-        email = request.POST.get('email')
-        if first_name and phone:
-            Client.objects.create(first_name=first_name, last_name=last_name, phone=phone, email=email)
-            messages.success(request, "Жаңы кардар ийгиликтүү кошулду!")
-            return redirect('clients')
-    return render(request, 'client_form.html')
-
+# =========================================================
+# 5. ПАНЕЛЬ ЖАНА БАШКАРУУ (DASHBOARD)
+# =========================================================
 
 @login_required
 def dashboard(request):
@@ -174,7 +196,26 @@ def dashboard(request):
         orders = Order.objects.filter(building=user.managed_building)
     else:
         orders = Order.objects.filter(user=user)
-    return render(request, 'orders.html', {'orders': orders})
+    return render(request, 'orders.html', {'orders': orders.order_by('-created_at')})
+
+
+@login_required
+def update_order_status(request, pk, status):
+    order = get_object_or_404(Order, pk=pk)
+    if (request.user.role == 'MANAGER' and order.building == request.user.managed_building) or request.user.role == 'ADMIN':
+        old_status = order.get_status_display()
+        order.status = status
+        order.save()
+        OrderHistory.objects.create(
+            order=order,
+            old_status=old_status,
+            new_status=order.get_status_display(),
+            changed_by=request.user
+        )
+        messages.success(request, f"Заказ статусу жаңыртылды!")
+    else:
+        messages.error(request, "Сизге бул аракетке уруксат жок!")
+    return redirect('dashboard')
 
 
 @login_required
@@ -188,9 +229,8 @@ def order_detail(request, pk):
 def order_delete(request, pk):
     order = get_object_or_404(Order, pk=pk)
     if request.method == "POST":
-        order_id = order.id
         order.delete()
-        messages.warning(request, f"#{order_id} заказы өчүрүлдү!")
+        messages.warning(request, "Заказ өчүрүлдү!")
         return redirect('dashboard')
     return render(request, 'order_confirm_delete.html', {'order': order})
 
@@ -198,14 +238,19 @@ def order_delete(request, pk):
 @login_required
 def order_edit(request, pk):
     order = get_object_or_404(Order, pk=pk)
-    old_status = order.status
+    old_status_display = order.get_status_display()
     if request.method == "POST":
         form = OrderForm(request.POST, instance=order)
         if form.is_valid():
             updated_order = form.save()
-            if old_status != updated_order.status:
-                OrderHistory.objects.create(order=updated_order, old_status=old_status, new_status=updated_order.status,
-                                            changed_by=request.user)
+            new_status_display = updated_order.get_status_display()
+            if old_status_display != new_status_display:
+                OrderHistory.objects.create(
+                    order=updated_order,
+                    old_status=old_status_display,
+                    new_status=new_status_display,
+                    changed_by=request.user
+                )
             messages.success(request, "Заказ ийгиликтүү жаңыланды!")
             return redirect('order_detail', pk=order.id)
     else:
@@ -213,31 +258,9 @@ def order_edit(request, pk):
     return render(request, 'order_form.html', {'form': form, 'order': order})
 
 
-@login_required
-def create_order(request):
-    services = Service.objects.all()
-    buildings = Building.objects.all()
-    selected_service_id = request.GET.get('service')
-    if request.method == 'POST':
-        service_id = request.POST.get('service')
-        building_id = request.POST.get('building')
-        comment = request.POST.get('comment', '')
-        from django.utils import timezone
-        now = timezone.now()
-        Order.objects.create(
-            user=request.user,
-            service=get_object_or_404(Service, id=service_id),
-            building=get_object_or_404(Building, id=building_id),
-            date=request.POST.get('date') or now.date(),
-            time=request.POST.get('time') or now.time(),
-            comment=comment,
-            status='NEW'
-        )
-        messages.success(request, "Жаңы заказ ийгиликтүү түзүлдү!")
-        return redirect('dashboard')
-    return render(request, 'create_order.html',
-                  {'services': services, 'buildings': buildings, 'selected_service_id': selected_service_id})
-
+# =========================================================
+# 6. КАРДАРЛАР ЖАНА ИМАРАТТАР
+# =========================================================
 
 @login_required
 def clients_view(request):
@@ -251,14 +274,49 @@ def buildings_view(request):
     return render(request, 'buildings.html', {'buildings': buildings})
 
 
-# ===================
-# 2. API ROOT
-# ===================
+@login_required
+def client_detail(request, pk):
+    client = get_object_or_404(Client, pk=pk)
+    return render(request, 'client_detail.html', {'client': client})
+
+
+@login_required
+def client_edit(request, pk):
+    client = get_object_or_404(Client, pk=pk)
+    if request.method == "POST":
+        client.first_name = request.POST.get('first_name')
+        client.last_name = request.POST.get('last_name')
+        client.phone = request.POST.get('phone')
+        client.email = request.POST.get('email')
+        client.save()
+        messages.success(request, "Кардардын маалыматы ийгиликтүү жаңыртылды!")
+        return redirect('client_detail', pk=client.pk)
+    return render(request, 'client_form.html', {'client': client})
+
+
+@login_required
+def client_create(request):
+    if request.method == "POST":
+        first_name = request.POST.get('first_name')
+        last_name = request.POST.get('last_name')
+        phone = request.POST.get('phone')
+        email = request.POST.get('email')
+        if first_name and phone:
+            Client.objects.create(first_name=first_name, last_name=last_name, phone=phone, email=email)
+            messages.success(request, "Жаңы кардар кошулду!")
+            return redirect('clients_view') # clients_view'ге редирект
+    return render(request, 'client_form.html')
+
+
+# =========================================================
+# 7. API БӨЛҮМҮ (REST FRAMEWORK - ТОЛУК)
+# =========================================================
+
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def api_root(request, format=None):
     return Response({
-        '0. Registration': reverse('register', request=request, format=format),
+        '0. Катталуу': reverse('register', request=request, format=format),
         '1. Имараттар': reverse('building-list', request=request, format=format),
         '2. Менеджерлер': reverse('manager-list', request=request, format=format),
         '3. Кызматтар': reverse('service-list', request=request, format=format),
@@ -268,23 +326,23 @@ def api_root(request, format=None):
     })
 
 
-# ===================
-# API VIEWSETS
-# ===================
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = [permissions.IsAuthenticated]
 
 
-class ManagerViewSet(UserViewSet):
+class ManagerViewSet(viewsets.ModelViewSet):
+    serializer_class = UserSerializer
+    permission_classes = [permissions.IsAuthenticated]
     def get_queryset(self):
         return User.objects.filter(role='MANAGER')
 
 
-class ClientViewSet(UserViewSet):
-    def get_queryset(self):
-        return User.objects.filter(role='USER')
+class ClientViewSet(viewsets.ModelViewSet):
+    queryset = Client.objects.all()
+    serializer_class = UserSerializer # Же ClientSerializer
+    permission_classes = [permissions.IsAuthenticated]
 
 
 class BuildingViewSet(viewsets.ModelViewSet):
